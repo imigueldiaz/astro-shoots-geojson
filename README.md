@@ -71,9 +71,6 @@ python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [-
    
 - `--quiet` will override `--verbose`. Both cannot be used together.
 
-
-
-
 3. The script will extract the light pollution data for the specified region and export it to the chosen output format.
 4. If the `--gzip` or `--zip` option is used, the script will compress the output file using the respective compression method.
 
@@ -81,13 +78,15 @@ python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [-
 
 The script generates two output files:
 
-1. `output.csv`: A CSV file containing the extracted light pollution data. Each row represents a data point with the following columns:
+1. `output.csv`: A CSV file containing the extracted light pollution data. Each row represents a data point with the following columns (if the option `--output-format CSV` is used):
    - Latitude
    - Longitude
    - Radiance
    - mpsas (magnitudes per square arcsecond)
    - Bortle (Bortle scale value)
-2. `output.csv.gz`: A compressed version of the CSV file using gzip compression.
+2. `output.csv.gz`: A compressed version of the CSV file using gzip compression if the `--gzip` option is used.
+3. `output.csv.zip`: A compressed version of the CSV file using zip compression if the `--zip` option is used.
+
 
 ## License
 
@@ -97,3 +96,6 @@ This script is released under the [MIT License](LICENSE).
 
 - The [Earth Observation Group (EOG)](https://payneinstitute.mines.edu/eog/) at the Payne Institute for Public Policy for providing the VIIRS Nighttime Lights data.
 - The [GDAL library](https://github.com/OSGeo/gdal) for enabling the reading and processing of GeoTIFF files.
+- The [numpy library](https://numpy.org/) for numerical computing in Python.
+- [This comment](https://gist.github.com/graydon/11198540?permalink_comment_id=2702247#gistcomment-2702247) from a GitHub Gist that provided the list of ISO 3166-1 alpha-3 country codes and bounding boxes.
+
