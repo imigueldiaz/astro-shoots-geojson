@@ -39,12 +39,25 @@ For further details, please refer to the document [here](https://eogdata.mines.e
 ## Usage
 
 1. Download the desired GeoTIFF file from the EOG data source.
-2. Update the following parameters in the script according to your requirements:
-   - `min_lat`, `max_lat`, `min_lon`, `max_lon`: Bounding box coordinates for the region of interest.
-   - `sampling_interval`: Sampling interval in pixels for extracting data points. Adjust this value based on the desired spatial resolution.
-3. Run the script using the command: `python extract_radiance.py`
-4. The script will extract the light pollution data for the specified region and export it to a CSV file named `output.csv`.
-5. The script will also compress the CSV file using gzip compression and save it as `output.csv.gz`.
+2. Run the script using the command: 
+
+```bash
+python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [--min_lon MIN_LON] [--max_lon MAX_LON] [--sampling_interval SAMPLING_INTERVAL] [--output_file OUTPUT_FILE] [--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]] [--gzip | --zip] [--verbose | --quiet]
+```
+- `input_file`: Path to the input GeoTIFF file.
+- `--min_lat MIN_LAT`: Minimum latitude of the bounding box (default: 35.947).
+- `--max_lat MAX_LAT`: Maximum latitude of the bounding box (default: 43.749).
+- `--min_lon MIN_LON`: Minimum longitude of the bounding box (default: -9.393).
+- `--max_lon MAX_LON`: Maximum longitude of the bounding box (default: 3.040).
+- `--sampling_interval SAMPLING_INTERVAL`: Sampling interval in kilometers (default: 0.5).
+- `--output_file OUTPUT_FILE`: Path to the output CSV file (default: output.csv).
+- `--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]`: Output format (CSV, GeoJSON, XML) (default: CSV).
+- `--gzip`: Compress the output file with gzip.
+- `--zip`: Compress the output file with zip.
+- `--verbose`: Print verbose output.
+- `--quiet`: Suppress all output.
+3. The script will extract the light pollution data for the specified region and export it to the chosen output format.
+4. If the `--gzip` or `--zip` option is used, the script will compress the output file using the respective compression method.
 
 ## Output
 
