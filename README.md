@@ -5,14 +5,36 @@ This Python script extracts light pollution data from a GeoTIFF file for a speci
 ## Prerequisites
 
 - Python 3.x
+- numpy library
 - GDAL library
   - On Windows, it is recommended to install GDAL using Conda. Other operating systems may be able to install it directly using pip.
+- The GeoTIFF file containing the light pollution data
+
+To install the required libraries, run the following commands:
+
+```bash
+conda create -n geotiff gdal python pip
+```
+
+or use requirements.txt:
+
+```bash
+pip install -r requirements.txt
+```
+
+or use conda:
+
+```bash
+conda env create -f environment.yml
+```
 
 ## Data Source
 
-The GeoTIFF files used in this script are obtained from the Earth Observation Group (EOG) at the Payne Institute for Public Policy. The data is part of the VIIRS Nighttime Lights product.
+The GeoTIFF files used in this script are obtained from the [Earth Observation Group (EOG)](https://payneinstitute.mines.edu/eog/) at the Payne Institute for Public Policy. The data is part of the [VIIRS Nighttime Lights](https://eogdata.mines.edu/products/vnl/) product.
 
-Please cite EOG as the data source and refer to the relevant papers for the specific EOG product you are using. Many of the VIIRS Nighttime Lights data are available under the Creative Commons Attribution 4.0 International license. For further details, please refer to the document [HERE](https://eogdata.mines.edu/products/vnl/).
+Please cite EOG as the data source and refer to the relevant papers for the specific EOG product you are using. 
+Many of the VIIRS Nighttime Lights data are available under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/). 
+For further details, please refer to the document [here](https://eogdata.mines.edu/files/EOG_products_CC_License.pdf).
 
 ## Usage
 
@@ -42,5 +64,5 @@ This script is released under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-- The Earth Observation Group (EOG) at the Payne Institute for Public Policy for providing the VIIRS Nighttime Lights data.
-- The GDAL library for enabling the reading and processing of GeoTIFF files.
+- The [Earth Observation Group (EOG)](https://payneinstitute.mines.edu/eog/) at the Payne Institute for Public Policy for providing the VIIRS Nighttime Lights data.
+- The [GDAL library](https://github.com/OSGeo/gdal) for enabling the reading and processing of GeoTIFF files.
