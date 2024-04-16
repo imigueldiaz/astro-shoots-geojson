@@ -45,17 +45,35 @@ For further details, please refer to the document [here](https://eogdata.mines.e
 python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [--min_lon MIN_LON] [--max_lon MAX_LON] [--sampling_interval SAMPLING_INTERVAL] [--output_file OUTPUT_FILE] [--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]] [--gzip | --zip] [--verbose | --quiet]
 ```
 - `input_file`: Path to the input GeoTIFF file.
-- `--min_lat MIN_LAT`: Minimum latitude of the bounding box (default: 35.947).
-- `--max_lat MAX_LAT`: Maximum latitude of the bounding box (default: 43.749).
-- `--min_lon MIN_LON`: Minimum longitude of the bounding box (default: -9.393).
-- `--max_lon MAX_LON`: Maximum longitude of the bounding box (default: 3.040).
-- `--sampling_interval SAMPLING_INTERVAL`: Sampling interval in kilometers (default: 0.5).
+- `--min_lat MIN_LAT`: Minimum latitude of the bounding box.
+- `--max_lat MAX_LAT`: Maximum latitude of the bounding box.
+- `--min_lon MIN_LON`: Minimum longitude of the bounding box.
+- `--max_lon MAX_LON`: Maximum longitude of the bounding box.
+- `--sampling_interval SAMPLING_INTERVAL`: Sampling interval in kilometers (default: 0.5). This the distance between each data point in the output file.
+      - For example, if the sampling interval is 0.5 km, the script will extract data points every 0.5 km in both the latitude and longitude directions.
+      - The minimum sampling interval is 0.5 km due to technical limitations. Each pixel in the GeoTIFF file represents a 15 arcsec area, around 0.5 km x 0.5 km.
+
 - `--output_file OUTPUT_FILE`: Path to the output CSV file (default: output.csv).
 - `--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]`: Output format (CSV, GeoJSON, XML) (default: CSV).
 - `--gzip`: Compress the output file with gzip.
 - `--zip`: Compress the output file with zip.
 - `--verbose`: Print verbose output.
 - `--quiet`: Suppress all output.
+- `--help`: Display the help message.
+- `--version`: Display the version information.
+- `--country`: Country code to extract the data for a specific country using the ISO 3166-1 alpha-3 code.
+   - For example, to extract data for the United States, use `--country USA`.
+   - The `--country` option will override the `--min_lat`, `--max_lat`, `--min_lon`, and `--max_lon` options.
+   - The country code must be in uppercase.
+   - The country code must be a valid ISO 3166-1 alpha-3 code.
+   - The `countries.txt` file contains the list of valid country codes, names and bounding box coordinates.
+   - If you see any error on the file please report it as an issue or create a pull request.
+   
+- `--quiet` will override `--verbose`. Both cannot be used together.
+
+
+
+
 3. The script will extract the light pollution data for the specified region and export it to the chosen output format.
 4. If the `--gzip` or `--zip` option is used, the script will compress the output file using the respective compression method.
 

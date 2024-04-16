@@ -4,6 +4,7 @@ import numpy as np
 import gzip
 import shutil
 import zipfile
+from countries_data import COUNTRIES_DATA
 
 # Function to convert radiance to Bortle scale with 0.1 precision
 def mpsasToBortle(mpsas):
@@ -61,6 +62,9 @@ def zip_file(filename, zip_filename, verbose):
 def log(message, verbose):
     if verbose:
         print(message)
+def error(message):
+    print(message)
+    exit(1)
 
 
 # Main function to extract radiance data from a raster file and export it to a CSV file
@@ -68,14 +72,15 @@ def main():
 
     parser = argparse.ArgumentParser(description='Extract light pollution data from a GeoTIFF file.')
     parser.add_argument('input_file', help='Path to the input GeoTIFF file')
-    parser.add_argument('--min_lat', type=float, default=35.947, help='Minimum latitude of the bounding box')
-    parser.add_argument('--max_lat', type=float, default=43.749, help='Maximum latitude of the bounding box')
-    parser.add_argument('--min_lon', type=float, default=-9.393, help='Minimum longitude of the bounding box')
-    parser.add_argument('--max_lon', type=float, default=3.040, help='Maximum longitude of the bounding box')
+    parser.add_argument('--min_lat', type=float, help='Minimum latitude of the bounding box')
+    parser.add_argument('--max_lat', type=float, help='Maximum latitude of the bounding box')
+    parser.add_argument('--min_lon', type=float, help='Minimum longitude of the bounding box')
+    parser.add_argument('--max_lon', type=float, help='Maximum longitude of the bounding box')
     parser.add_argument('--sampling_interval', type=float, default=0.5, help='Sampling interval in kilometers')
     parser.add_argument('--output_file', default='output.csv', help='Path to the output CSV file')
     parser.add_argument('--output-format', default='CSV', choices=["CSV", "GeoJSON", "XML"], nargs=3, help='Output format (CSV, GeoJSON, XML)')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('--country', help='ISO3 code of the country to extract data for')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--gzip', action="store_true",  help='Compress the output file with gzip')
@@ -87,10 +92,14 @@ def main():
 
     args = parser.parse_args()
 
+    if(args.sampling_interval < 0.5):
+        error("Error: Sampling interval must be greater or equal than 0.5km. The GeoTIFF image has 15 arcseconds for each pixel")
+        return
+
     raster = gdal.Open(args.input_file, gdal.OF_RASTER)
 
     if raster is None:
-        log("Error: Could not open the raster file.", args.verbose)
+        error("Error: Could not open the raster file.", args.verbose)
     else:
         log("Raster file opened successfully.", args.verbose)
     
@@ -106,8 +115,60 @@ def main():
         rows = raster.RasterYSize # Number of rows
         log(f"Number of rows: {rows}, Number of columns: {cols}", args.verbose)
         
-        # Define the bounding box for Spain
-        min_lat, max_lat,min_lon, max_lon = args.min_lat, args.max_lat, args.min_lon, args.max_lon
+
+        if args.country:
+            country_data = COUNTRIES_DATA.get(args.country)
+
+            #If args.country is not found in the dictionary, return an error
+            if not country_data:
+                error("Error: Could not find the country data.")
+                return
+            # If args.country is ESP we ask to the user if they want to extract data for the whole Spain or for specific regions
+            if args.country == "ESP":
+                print("Do you want to extract data for the whole Spain or for specific regions?")
+                print("1. Whole Spain")
+                print("2. Specific regions")
+                choice = input("Enter your choice (1/2): ")
+                if choice == "1":
+                    country_data = COUNTRIES_DATA["ESP"]
+                elif choice == "2":
+                    print("Select the region you want to extract data for:")
+                    print("1. Canary Islands")
+                    print("2. Balearic Islands")
+                    print("3. Spanish Peninsula")
+                    region_choice = input("Enter your choice (1/2/3): ")
+                    if region_choice == "1":
+                        country_data = COUNTRIES_DATA["ESP_CANARY"]
+                    elif region_choice == "2":
+                        country_data = COUNTRIES_DATA["ESP_BALEARIC"]
+                    elif region_choice == "3":
+                        country_data = COUNTRIES_DATA["ESP_PENINSULA"]
+                    else:
+                        error("Error: Invalid region choice.")
+                        return
+                else:
+                    error("Error: Invalid choice.")
+                    return
+
+            if country_data:
+                min_lat = country_data["lat_min"]
+                max_lat = country_data["lat_max"]
+                min_lon = country_data["lon_min"]
+                max_lon = country_data["lon_max"]
+                log(f"Extracting data for {country_data['Name']} with bounding box: {min_lat} - {max_lat} (lat), {min_lon} - {max_lon} (lon)", args.verbose)
+
+            else:
+                error("Error: Could not find the country data.")
+                return
+
+        else:
+            # Define the bounding box from the arguments
+            min_lat, max_lat,min_lon, max_lon = args.min_lat, args.max_lat, args.min_lon, args.max_lon
+
+            # if some of the bounding box values are not provided, use the values from the countries_data.py file
+            if not min_lat or not max_lat or not min_lon or not max_lon:
+                error("Error: Bounding box values not provided. Did you forget to provide the --country argument?")
+                return
         
         # Calculate the pixel indices for Spain's bounding box
         min_col = int((min_lon - origin_x) / pixel_width)
@@ -118,7 +179,11 @@ def main():
         #Calculate the number of pixels corresponding to 0.5km
         km_to_arcseconds = args.sampling_interval * 3600 / 111.32  # Convert to arcseconds
         sampling_interval = int(km_to_arcseconds / 15)  # Divide by 15 arcseconds per pixel
-        log(f"Sampling interval: {sampling_interval}px for {args.sampling_interval}km in Spain.\n {km_to_arcseconds:.3f} arcseconds for {args.sampling_interval}km", args.verbose)
+
+        #The region name should be in the country_data dictionary or in the passed arguments
+        region_name = country_data.get("Name") if country_data else "Custom region"
+
+        log(f"Sampling interval: {sampling_interval}px for {args.sampling_interval}km in {region_name}.\n {km_to_arcseconds:.3f} arcseconds for {args.sampling_interval}km", args.verbose)
 
         # Create a list to store the extracted data for Spain
         range_data = []
