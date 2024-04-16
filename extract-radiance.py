@@ -3,16 +3,10 @@ import numpy as np
 import gzip
 import shutil
 
-def is_in_spain(lat, lon):
-    # Approximate bounding box for Spain
-    # 'ES': ('Spain', (-9.39288367353, 35.946850084, 3.03948408368, 43.7483377142)),
-    min_lat, max_lat = 35.947, 43.749
-    min_lon, max_lon = -9.393, 3.040
-    return min_lat <= lat <= max_lat and min_lon <= lon <= max_lon
-
+# Function to convert radiance to Bortle scale with 0.1 precision
 def mpsasToBortle(mpsas):
     mpsas_ranges = [21.89, 21.69, 21.25, 20.49, 19.50, 18.94, 18.38, 17.80]
-    bortle_values = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    bortle_values =  range(1, 10)
 
     if mpsas > mpsas_ranges[0]:
         return 1.0
@@ -29,26 +23,28 @@ def mpsasToBortle(mpsas):
             bortle = bortle_low + (mpsas - mpsas_low) * (bortle_high - bortle_low) / (mpsas_high - mpsas_low)
             return round(bortle, 1)
 
+# Function to export the extracted data to a CSV file
 def export_csv(data, filename):
 
     with open(filename, 'w') as file:
         file.write('Latitude;Longitude;Radiance;mpsas;Bortle\n')
         for row in data:
-            if float(row[2]) > 0.0:
-                latitude = row[0]
-                longitude = row[1]
-                radiance = row[2]
-                # Convert radiance to magnitudes per square arcsecond
-                # This formula assumes the radiance is measured in the V band (visual magnitude) with a wavelength around 550 nm. 
-                # The constant 20.7233 is derived from the definition that a surface brightness of 0 mpsas
-                # corresponds to a radiance of 4.0 x 10^-8 W/cm2/sr in the V band.
-                mpsas = -2.5 * np.log10(radiance) + 20.7233
+            latitude = row[0]
+            longitude = row[1]
+            radiance = row[2]
 
-                # Convert mpsas to Bortle scale on a homemade continuous scale with 0.1 precision, simply to have a better understanding of the light pollution level.
-                bortle = mpsasToBortle(mpsas)
-                file.write(f'{latitude};{longitude};{radiance};{mpsas};{bortle}\n')
+            # Convert radiance to magnitudes per square arcsecond
+            # This formula assumes the radiance is measured in the V band (visual magnitude) with a wavelength around 550 nm. 
+            # The constant 20.7233 is derived from the definition that a surface brightness of 0 mpsas
+            # corresponds to a radiance of 4.0 x 10^-8 W/cm2/sr in the V band.
+            mpsas = -2.5 * np.log10(radiance) + 20.7233
+
+            # Convert mpsas to Bortle scale on a homemade continuous scale with 0.1 precision, 
+            # simply to have a better understanding of the light pollution level.
+            bortle = mpsasToBortle(mpsas)
+            file.write(f'{latitude};{longitude};{radiance};{mpsas};{bortle}\n')
   
-
+# Function to compress a file using gzip
 def gzip_file(filename, gzip_filename):
     with open(filename, 'rb') as f_in:
         with gzip.open(gzip_filename, 'wb', 9) as f_out:
