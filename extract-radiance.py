@@ -4,13 +4,14 @@ import numpy as np
 import gzip
 import shutil
 import zipfile
-from countries_data import COUNTRIES_DATA
-from rich.console import Console
-from rich.theme import Theme
-from rich.progress import Progress
 import os
 import locale
 import json
+from rich.console import Console
+from rich.theme import Theme
+from rich.progress import Progress
+from rich.prompt import Prompt
+from countries_data import COUNTRIES_DATA
 
 # Set the locale to the default system locale
 locale.setlocale(locale.LC_ALL, '')
@@ -147,11 +148,16 @@ def log_export_data(format, size):
     return(f"Exporting data to {format} file with {format_number(size)} recorded coordinates.")
 
 # Function to ask the user if they want to extract data for the whole Spain or for specific regions
+
+
 def process_spain_regions():
-    console.print("Do you want to extract data for the whole Spain or for specific regions?")
-    console.print("1. Whole Spain")
-    console.print("2. Specific regions")
-    choice = console.input("Enter your choice (1/2): ")
+    choice = Prompt.ask(
+        "Do you want to extract data for the whole Spain or for specific regions?",
+        choices=["1", "2"],
+        default="1",
+        show_choices=True,
+        show_default=True,
+    )
     if choice == "1":
         return COUNTRIES_DATA["ESP"]
     elif choice == "2":
@@ -159,7 +165,13 @@ def process_spain_regions():
         console.print("1. Canary Islands")
         console.print("2. Balearic Islands")
         console.print("3. Spanish Peninsula")
-        region_choice = console.input("Enter your choice (1/2/3): ")
+        region_choice = Prompt.ask(
+            "Enter your choice (1/2/3): ",
+            choices=["1", "2", "3"],
+            default="3",
+            show_choices=True,
+            show_default=True,
+        )
         if region_choice == "1":
             return COUNTRIES_DATA["ESP_CANARY"]
         elif region_choice == "2":
@@ -167,11 +179,12 @@ def process_spain_regions():
         elif region_choice == "3":
             return COUNTRIES_DATA["ESP_PENINSULA"]
         else:
-            error("Error: Invalid region choice.")
+            console.print("[bold red]Error: Invalid region choice.[/bold red]")
             return None
     else:
-        error("Error: Invalid choice.")
+        console.print("[bold red]Error: Invalid choice.[/bold red]")
         return None
+
 
 # Function to extract data from the raster file
 def process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height, verbose):
