@@ -127,28 +127,43 @@ def process_spain_regions():
         return None
 
 # Function to extract data from the raster file
-def process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height):
+def process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height, verbose):
     total_iterations = ((max_row - min_row + 1) // sampling_interval) * ((max_col - min_col + 1) // sampling_interval)
     range_data = []
 
-    with Progress() as progress:
-        task = progress.add_task("[progress]Extracting data...", total=total_iterations)
+    if verbose:
+        with Progress() as progress:
+            task = progress.add_task("[progress]Extracting data...", total=total_iterations)
 
+            for i in range(min_row, max_row + 1, sampling_interval):
+                for j in range(min_col, max_col + 1, sampling_interval):
+                    # Calculate the geographic coordinates of the current pixel
+                    x = origin_x + j * pixel_width
+                    y = origin_y + i * pixel_height
+                    
+                    # Read the light pollution value at the current pixel
+                    data = raster.ReadAsArray(j, i, 1, 1)
+                    light_pollution = data[0, 0]
+                    
+                    # Append the data to the list if light pollution is not zero
+                    if light_pollution > 0.0:
+                        range_data.append([y, x, light_pollution])
+                    
+                    progress.update(task, advance=1)
+    else:
         for i in range(min_row, max_row + 1, sampling_interval):
-            for j in range(min_col, max_col + 1, sampling_interval):
-                # Calculate the geographic coordinates of the current pixel
-                x = origin_x + j * pixel_width
-                y = origin_y + i * pixel_height
-                
-                # Read the light pollution value at the current pixel
-                data = raster.ReadAsArray(j, i, 1, 1)
-                light_pollution = data[0, 0]
-                
-                # Append the data to the list if light pollution is not zero
-                if light_pollution > 0.0:
-                    range_data.append([y, x, light_pollution])
-                
-                progress.update(task, advance=1)
+                for j in range(min_col, max_col + 1, sampling_interval):
+                    # Calculate the geographic coordinates of the current pixel
+                    x = origin_x + j * pixel_width
+                    y = origin_y + i * pixel_height
+                    
+                    # Read the light pollution value at the current pixel
+                    data = raster.ReadAsArray(j, i, 1, 1)
+                    light_pollution = data[0, 0]
+                    
+                    # Append the data to the list if light pollution is not zero
+                    if light_pollution > 0.0:
+                        range_data.append([y, x, light_pollution])
 
     return range_data
 
@@ -215,8 +230,9 @@ def main():
                 error("Error: Could not find the country data.")
                 return
             # If args.country is ESP we ask to the user if they want to extract data for the whole Spain or for specific regions
-            if args.country == "ESP":
+            if args.country == "ESP" and args.verbose:
                 country_data = process_spain_regions()
+
                 if not country_data:
                     return
 
@@ -256,24 +272,34 @@ def main():
         log(f"Sampling interval: {sampling_interval}px for {args.sampling_interval:.2f}km in {region_name}, {km_to_arcseconds:.3f} arcseconds for the interval", args.verbose)
 
         # Create a list to store the extracted data. Each element is a list with the latitude, longitude, and radiance values
-        range_data = process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height)
+        range_data = process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height, args.verbose)
         
         #Export the extracted data to a CSV file
         size = len(range_data)
 
-        if(args.output_format == "CSV"):
-            with console.status(log_export_data("CSV", size)):
+        if args.output_format == "CSV":
+            if args.verbose:
+                with console.status(log_export_data("CSV", size)):
+                    export_csv(range_data, args.output_file)
+            else:
                 export_csv(range_data, args.output_file)
         
         log("Data extraction and export completed successfully.", args.verbose)
 
-        #gzip the file
-        if(args.gzip):
-            with console.status("Compressing the file with gzip..."):
+        if args.gzip:
+            if args.verbose:
+                with console.status("Compressing the file with gzip..."):
+                    gzip_file(args.output_file, f"{args.output_file}.gz", args.verbose)
+            else:
                 gzip_file(args.output_file, f"{args.output_file}.gz", args.verbose)
-        if(args.zip):
-            with console.status("Compressing the file with zip..."):
+
+        if args.zip:
+            if args.verbose:
+                with console.status("Compressing the file with zip..."):
+                    zip_file(args.output_file, f"{args.output_file}.zip", args.verbose)
+            else:
                 zip_file(args.output_file, f"{args.output_file}.zip", args.verbose)
+
 
 if __name__ == '__main__':
     main()
