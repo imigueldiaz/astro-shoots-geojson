@@ -10,6 +10,7 @@ from rich.theme import Theme
 from rich.progress import Progress
 import os
 import locale
+import json
 
 # Set the locale to the default system locale
 locale.setlocale(locale.LC_ALL, '')
@@ -55,6 +56,10 @@ def radianceToMpsas(radiance):
 # Function to export the extracted data to a CSV file
 def export_csv(data, filename):
 
+    #if the filename extension is not .csv we add it to the filename
+    if not filename.endswith(".csv"):
+        filename += ".csv"
+
     with open(filename, 'w') as file:
         file.write('Latitude;Longitude;Radiance;mpsas;Bortle\n')
         for row in data:
@@ -68,7 +73,49 @@ def export_csv(data, filename):
             # simply to have a better understanding of the light pollution level.
             bortle = mpsasToBortle(mpsas)
             file.write(f'{latitude};{longitude};{radiance};{mpsas};{bortle}\n')
-  
+    return filename
+
+import json
+
+# Function to export the extracted data to a GeoJSON file
+def export_geojson(data, filename):
+    # If the filename extension is not .geojson, add it to the filename
+    if not filename.endswith(".json"):
+        filename += ".json"
+
+    features = []
+    for row in data:
+        latitude = float(row[0])
+        longitude = float(row[1])
+        radiance = float(row[2])
+
+        mpsas = radianceToMpsas(radiance)
+        bortle = mpsasToBortle(mpsas)
+
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [longitude, latitude]
+            },
+            "properties": {
+                "Radiance": radiance,
+                "mpsas": mpsas,
+                "Bortle": bortle
+            }
+        }
+        features.append(feature)
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+    with open(filename, 'w') as file:
+        json.dump(geojson, file, indent=0)
+
+    return filename
+
 # Function to compress a file using gzip
 def gzip_file(filename, gzip_filename, verbose):
     with open(filename, 'rb') as f_in:
@@ -173,13 +220,13 @@ def main():
 
     parser = argparse.ArgumentParser(description='Extract light pollution data from a GeoTIFF file.')
     parser.add_argument('input_file', help='Path to the input GeoTIFF file')
-    parser.add_argument('--min_lat', type=float, help='Minimum latitude of the bounding box')
-    parser.add_argument('--max_lat', type=float, help='Maximum latitude of the bounding box')
-    parser.add_argument('--min_lon', type=float, help='Minimum longitude of the bounding box')
-    parser.add_argument('--max_lon', type=float, help='Maximum longitude of the bounding box')
-    parser.add_argument('--sampling_interval', type=float, default=0.5, help='Sampling interval in kilometers')
-    parser.add_argument('--output_file', default='output.csv', help='Path to the output CSV file')
-    parser.add_argument('--output-format', default='CSV', choices=["CSV", "GeoJSON", "XML"], nargs=3, help='Output format (CSV, GeoJSON, XML)')
+    parser.add_argument('--minlat', type=float, help='Minimum latitude of the bounding box')
+    parser.add_argument('--maxlat', type=float, help='Maximum latitude of the bounding box')
+    parser.add_argument('--minlon', type=float, help='Minimum longitude of the bounding box')
+    parser.add_argument('--maxlon', type=float, help='Maximum longitude of the bounding box')
+    parser.add_argument('--sampling', type=float, default=0.5, help='Sampling interval in kilometers')
+    parser.add_argument('--outfile', default='output', help='Path to the output file with no extension')
+    parser.add_argument('--outformat', default='CSV', choices=["CSV", "GeoJSON", "XML"], help='Output format (CSV, GeoJSON, XML)')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('--country', help='ISO3 code of the country to extract data for')
 
@@ -187,18 +234,22 @@ def main():
     group.add_argument('--gzip', action="store_true",  help='Compress the output file with gzip')
     group.add_argument('--zip' , action='store_true', help='Compress the output file with zip')
 
-    group2 = parser.add_mutually_exclusive_group(required=True)
+    group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('--verbose', action='store_true', help='Print verbose output')
     group2.add_argument('--quiet', action='store_true', help='Suppress all output')
 
     args = parser.parse_args()
+
+    # if not verbose or quiet set verbose
+    if not args.verbose and not args.quiet:
+        args.verbose = True
 
     #if the args.input_file file does not exist, return an error.
     if not os.path.exists(args.input_file):
         error("The input file does not exist.")
         return
 
-    if(args.sampling_interval < 0.5):
+    if(args.sampling < 0.5):
         error("Sampling interval must be greater or equal than 0.5km. The GeoTIFF image has 15 arcseconds for each pixel")
         return
 
@@ -249,7 +300,7 @@ def main():
 
         else:
             # Define the bounding box from the arguments
-            min_lat, max_lat,min_lon, max_lon = args.min_lat, args.max_lat, args.min_lon, args.max_lon
+            min_lat, max_lat,min_lon, max_lon = args.minlat, args.maxlat, args.minlon, args.maxlon
 
             # if some of the bounding box values are not provided, use the values from the countries_data.py file
             if not min_lat or not max_lat or not min_lon or not max_lon:
@@ -263,13 +314,13 @@ def main():
         max_row = int((origin_y - min_lat) / abs(pixel_height))
         
         #Calculate the number of pixels corresponding to 0.5km
-        km_to_arcseconds = args.sampling_interval * 3600 / 111.32  # Convert to arcseconds
+        km_to_arcseconds = args.sampling * 3600 / 111.32  # Convert to arcseconds
         sampling_interval = int(km_to_arcseconds / 15)  # Divide by 15 arcseconds per pixel
 
         #The region name should be in the country_data dictionary or in the passed arguments
         region_name = country_data.get("Name") if country_data else "Custom region"
 
-        log(f"Sampling interval: {sampling_interval}px for {args.sampling_interval:.2f}km in {region_name}, {km_to_arcseconds:.3f} arcseconds for the interval", args.verbose)
+        log(f"Sampling interval: {sampling_interval}px for {args.sampling:.2f}km in {region_name}, {km_to_arcseconds:.3f} arcseconds for the interval", args.verbose)
 
         # Create a list to store the extracted data. Each element is a list with the latitude, longitude, and radiance values
         range_data = process_range_data(raster, min_row, max_row, min_col, max_col, sampling_interval, origin_x, origin_y, pixel_width, pixel_height, args.verbose)
@@ -277,28 +328,37 @@ def main():
         #Export the extracted data to a CSV file
         size = len(range_data)
 
-        if args.output_format == "CSV":
+        filename = args.outfile
+
+        if args.outformat == "CSV":
             if args.verbose:
                 with console.status(log_export_data("CSV", size)):
-                    export_csv(range_data, args.output_file)
+                    filename = export_csv(range_data, filename)
             else:
-                export_csv(range_data, args.output_file)
+                filename = export_csv(range_data, filename)
+
+        if args.outformat == "GeoJSON":
+            if args.verbose:
+                with console.status(log_export_data("GeoJSON", size)):
+                    filename = export_geojson(range_data, filename)
+            else:
+                filename = export_geojson(range_data, filename)
         
         log("Data extraction and export completed successfully.", args.verbose)
 
         if args.gzip:
             if args.verbose:
                 with console.status("Compressing the file with gzip..."):
-                    gzip_file(args.output_file, f"{args.output_file}.gz", args.verbose)
+                    gzip_file(filename, f"{filename}.gz", args.verbose)
             else:
-                gzip_file(args.output_file, f"{args.output_file}.gz", args.verbose)
+                gzip_file(filename, f"{filename}.gz", args.verbose)
 
         if args.zip:
             if args.verbose:
                 with console.status("Compressing the file with zip..."):
-                    zip_file(args.output_file, f"{args.output_file}.zip", args.verbose)
+                    zip_file(filename, f"{filename}.zip", args.verbose)
             else:
-                zip_file(args.output_file, f"{args.output_file}.zip", args.verbose)
+                zip_file(filename, f"{filename}.zip", args.verbose)
 
 
 if __name__ == '__main__':
