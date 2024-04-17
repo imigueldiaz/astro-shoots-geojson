@@ -42,19 +42,19 @@ For further details, please refer to the document [here](https://eogdata.mines.e
 2. Run the script using the command: 
 
 ```bash
-python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [--min_lon MIN_LON] [--max_lon MAX_LON] [--sampling_interval SAMPLING_INTERVAL] [--output_file OUTPUT_FILE] [--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]] [--gzip | --zip] [--verbose | --quiet]
+python extract_radiance.py input_file [--minlat MIN_LAT] [--maxlat MAX_LAT] [--minlon MIN_LON] [--maxlon MAX_LON] [--sampling SAMPLING_INTERVAL] [--outfile OUTPUT_FILE] [--outformat {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]] [--gzip | --zip] [--verbose | --quiet]
 ```
 - `input_file`: Path to the input GeoTIFF file.
-- `--min_lat MIN_LAT`: Minimum latitude of the bounding box.
-- `--max_lat MAX_LAT`: Maximum latitude of the bounding box.
-- `--min_lon MIN_LON`: Minimum longitude of the bounding box.
-- `--max_lon MAX_LON`: Maximum longitude of the bounding box.
-- `--sampling_interval SAMPLING_INTERVAL`: Sampling interval in kilometers (default: 0.5). This the distance between each data point in the output file.
+- `--minlat MIN_LAT`: Minimum latitude of the bounding box.
+- `--maxlat MAX_LAT`: Maximum latitude of the bounding box.
+- `--minlon MIN_LON`: Minimum longitude of the bounding box.
+- `--maxlon MAX_LON`: Maximum longitude of the bounding box.
+- `--sampling SAMPLING_INTERVAL`: Sampling interval in kilometers (default: 0.5). This the distance between each data point in the output file.
       - For example, if the sampling interval is 0.5 km, the script will extract data points every 0.5 km in both the latitude and longitude directions.
       - The minimum sampling interval is 0.5 km due to technical limitations. Each pixel in the GeoTIFF file represents a 15 arcsec area, around 0.5 km x 0.5 km.
 
-- `--output_file OUTPUT_FILE`: Path to the output CSV file (default: output.csv).
-- `--output-format {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]`: Output format (CSV, GeoJSON, XML) (default: CSV).
+- `--outfile OUTPUT_FILE`: Path to the output file with no extension (default: output).
+- `--outformat {CSV,GeoJSON,XML} [{CSV,GeoJSON,XML} ...]`: Output format (CSV, GeoJSON, XML) (default: CSV).
 - `--gzip`: Compress the output file with gzip.
 - `--zip`: Compress the output file with zip.
 - `--verbose`: Print verbose output.
@@ -69,16 +69,16 @@ python extract_radiance.py input_file [--min_lat MIN_LAT] [--max_lat MAX_LAT] [-
    - The `countries.txt` file contains the list of valid country codes, names and bounding box coordinates.
    - If you see any error on the file please report it as an issue or create a pull request.
    
-- `--quiet` will override `--verbose`. Both cannot be used together.
+- `--quiet` will override `--verbose`. Both cannot be used together, and if none is used, the script will assign the default value of `--verbose`.
 
 3. The script will extract the light pollution data for the specified region and export it to the chosen output format.
 4. If the `--gzip` or `--zip` option is used, the script will compress the output file using the respective compression method.
 
 ## Output
 
-The script generates two output files:
+The script generates two output files, e. g. if the `--outformat CSV` option is used:
 
-1. `output.csv`: A CSV file containing the extracted light pollution data. Each row represents a data point with the following columns (if the option `--output-format CSV` is used):
+1. `output.csv`: A CSV file containing the extracted light pollution data. Each row represents a data point with the following columns (if the option `--outformat CSV` is used):
    - Latitude
    - Longitude
    - Radiance
