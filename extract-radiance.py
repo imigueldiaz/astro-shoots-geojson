@@ -76,8 +76,6 @@ def export_csv(data, filename):
             file.write(f'{latitude};{longitude};{radiance};{mpsas};{bortle}\n')
     return filename
 
-import json
-
 # Function to export the extracted data to a GeoJSON file
 def export_geojson(data, filename):
     # If the filename extension is not .geojson, add it to the filename
@@ -148,8 +146,6 @@ def log_export_data(format, size):
     return(f"Exporting data to {format} file with {format_number(size)} recorded coordinates.")
 
 # Function to ask the user if they want to extract data for the whole Spain or for specific regions
-
-
 def process_spain_regions():
     choice = Prompt.ask(
         "Do you want to extract data for the whole Spain or for specific regions?",
